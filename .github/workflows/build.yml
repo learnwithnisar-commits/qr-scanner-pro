@@ -55,7 +55,7 @@ jobs:
           fi
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
       - name: Build release AAB
         run: flutter build appbundle --release
