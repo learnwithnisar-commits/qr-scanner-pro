@@ -21,7 +21,7 @@ val hasReleaseKey = keyPropsFile.exists()
 
 configure<ApplicationExtension> {
     namespace = "com.nisarahmedkatyar.qrscannerpro"
-    compileSdk = 36
+    compileSdk = 37
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
