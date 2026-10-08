@@ -25,6 +25,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Debug workspace
+        run: pwd && ls -la && echo "---" && ls lib/ 2>/dev/null || echo "no lib dir"
+
       - name: Install dependencies
         run: flutter pub get
 
