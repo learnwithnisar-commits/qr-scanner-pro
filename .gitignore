@@ -1,0 +1,7 @@
+.dart_tool/
+.build/
+build/
+.idea/
+*.jks
+*.keystore
+keystore-info.txt
