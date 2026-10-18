@@ -18,9 +18,9 @@ class AdsConfig {
 
   // --- Ad unit IDs (one-line swap to go live) ---
   static const String bannerAdUnitId =
-      'ca-app-pub-3940256099942544/6300978111'; // TEST banner
+      'ca-app-pub-5747325713017260/4798312281'; // REAL banner
   static const String interstitialAdUnitId =
-      'ca-app-pub-3940256099942544/1033173712'; // TEST interstitial
+      'ca-app-pub-5747325713017260/5129484778'; // REAL interstitial
 
   // --- Policy ---
   /// Show an interstitial after this many scan-result closes.
