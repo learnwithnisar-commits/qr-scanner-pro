@@ -24,7 +24,18 @@ class AdsConfig {
 
   // --- Policy ---
   /// Show an interstitial after this many scan-result closes.
+  /// This is a NATURAL BREAK only: never on launch, never on exit,
+  /// never while scanning, and never on a timer (no auto-ad after
+  /// N seconds — a timed interstitial is an unexpected ad under
+  /// AdMob/Play policy and hurts retention).
   static const int interstitialEveryNResults = 3;
+
+  /// Minimum gap between two interstitials (cooldown, NOT a timer
+  /// trigger). Even when the result-count threshold is reached, no
+  /// interstitial shows until this long after the previous one.
+  /// This is a cap, not an auto-show: the ad still waits for the
+  /// next natural break (a result close) after the cooldown ends.
+  static const int interstitialMinIntervalSeconds = 60;
 
   /// Set to true ONLY with real IDs + real App ID in the manifest.
   static const bool useRealAds = false;
