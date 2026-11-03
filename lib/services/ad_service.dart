@@ -9,17 +9,29 @@ class AdService extends ChangeNotifier {
   InterstitialAd? _interstitial;
   int _resultsSinceInterstitial = 0;
   bool _loadingInterstitial = false;
+  DateTime? _lastInterstitialShown;
 
   /// Call each time a scan-result sheet is closed.
   /// Returns true if an interstitial was shown.
+  /// Policy: natural break (result close) + every-N-results +
+  /// minimum-interval cooldown. No timer-triggered ads.
   Future<bool> onResultClosed() async {
     _resultsSinceInterstitial++;
-    if (_resultsSinceInterstitial >= AdsConfig.interstitialEveryNResults) {
-      _resultsSinceInterstitial = 0;
-      await showInterstitial();
-      return true;
+    if (_resultsSinceInterstitial < AdsConfig.interstitialEveryNResults) {
+      return false;
     }
-    return false;
+    final last = _lastInterstitialShown;
+    if (last != null &&
+        DateTime.now().difference(last).inSeconds <
+            AdsConfig.interstitialMinIntervalSeconds) {
+      // Cooldown active: keep the counter at threshold so the NEXT
+      // result close (after the cooldown) can show — never force an
+      // ad mid-task just because the cooldown expired.
+      return false;
+    }
+    _resultsSinceInterstitial = 0;
+    await showInterstitial();
+    return true;
   }
 
   void loadInterstitial() {
@@ -50,6 +62,7 @@ class AdService extends ChangeNotifier {
       return;
     }
     _interstitial = null;
+    _lastInterstitialShown = DateTime.now();
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
@@ -81,22 +94,51 @@ class _AdBanner extends StatefulWidget {
 class _AdBannerState extends State<_AdBanner> {
   BannerAd? _bannerAd;
   bool _loaded = false;
+  bool _bannerRequested = false;
 
   @override
-  void initState() {
-    super.initState();
-    _bannerAd = BannerAd(
-      adUnitId: AdsConfig.bannerAdUnitId,
-      size: AdSize.banner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _loaded = true),
-        onAdFailedToLoad: (ad, err) {
-          debugPrint('Banner failed to load: $err');
-          ad.dispose();
-        },
-      ),
-    )..load();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Anchored adaptive banner: full-width, Google-optimized height
+    // (never taller than 15% of screen height). Falls back to the
+    // standard banner size if no adaptive size is available, so a
+    // failed size lookup never leaves the slot broken or overlapping
+    // scanner controls — the widget stays anchored at the bottom.
+    if (_bannerRequested) return;
+    _bannerRequested = true;
+    final width = MediaQuery.of(context).size.width.truncate();
+    AdSize.getLargeAnchoredAdaptiveBannerAdSizeWithOrientation(
+      MediaQuery.of(context).orientation,
+      width,
+    ).then((size) {
+      if (!mounted) return;
+      _bannerAd = BannerAd(
+        adUnitId: AdsConfig.bannerAdUnitId,
+        size: size ?? AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => _loaded = true),
+          onAdFailedToLoad: (ad, err) {
+            debugPrint('Banner failed to load: $err');
+            ad.dispose();
+          },
+        ),
+      )..load();
+    }).catchError((_) {
+      if (!mounted) return;
+      _bannerAd = BannerAd(
+        adUnitId: AdsConfig.bannerAdUnitId,
+        size: AdSize.banner,
+        request: const AdRequest(),
+        listener: BannerAdListener(
+          onAdLoaded: (_) => setState(() => _loaded = true),
+          onAdFailedToLoad: (ad, err) {
+            debugPrint('Banner failed to load: $err');
+            ad.dispose();
+          },
+        ),
+      )..load();
+    });
   }
 
   @override
